@@ -1,5 +1,12 @@
+import Navbar from '../components/Navbar';
+
 function Challenges() {
-    return <div>Challenges coming soon</div>;
+    return (
+        <div>
+            <Navbar />
+            <div>Challenges coming soon</div>
+        </div>
+    );
 }
 
 export default Challenges;

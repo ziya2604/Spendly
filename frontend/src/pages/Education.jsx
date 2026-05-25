@@ -1,5 +1,12 @@
+import Navbar from '../components/Navbar';
+
 function Education() {
-    return <div>Education coming soon</div>;
+    return (
+        <div>
+            <Navbar />
+            <div>Education coming soon</div>
+        </div>
+    );
 }
 
 export default Education;

@@ -1,5 +1,12 @@
+import Navbar from '../components/Navbar';
+
 function Calculator() {
-    return <div>Calculator coming soon</div>;
+    return (
+        <div>
+            <Navbar />
+            <div>Calculator coming soon</div>
+        </div>
+    );
 }
 
 export default Calculator;

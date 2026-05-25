@@ -1,5 +1,12 @@
+import Navbar from '../components/Navbar';
+
 function Goals() {
-    return <div>Goals coming soon</div>;
+    return (
+        <div>
+            <Navbar />
+            <div>Goals coming soon</div>
+        </div>
+    );
 }
 
 export default Goals;

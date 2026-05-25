@@ -1,5 +1,12 @@
+import Navbar from '../components/Navbar';
+
 function Budgets() {
-    return <div>Budgets coming soon</div>;
+    return (
+        <div>
+            <Navbar />
+            <div>Budgets coming soon</div>
+        </div>
+    );
 }
 
 export default Budgets;

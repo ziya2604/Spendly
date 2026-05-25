@@ -1,5 +1,12 @@
+import Navbar from '../components/Navbar';
+
 function Groups() {
-    return <div>Groups coming soon</div>;
+    return (
+        <div>
+            <Navbar />
+            <div>Groups coming soon</div>
+        </div>
+    );
 }
 
 export default Groups;
