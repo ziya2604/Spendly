@@ -1,152 +1,232 @@
 import { useState, useEffect } from 'react';
-import { Pie, Line } from 'react-chartjs-2';
-import {
-    Chart as ChartJS, ArcElement, Tooltip,
-    Legend, CategoryScale, LinearScale,
-    PointElement, LineElement
-} from 'chart.js';
+import { Pie } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import Navbar from '../components/Navbar';
+import { Link } from 'react-router-dom';
 
-ChartJS.register(
-    ArcElement, Tooltip, Legend,
-    CategoryScale, LinearScale,
-    PointElement, LineElement
-);
+ChartJS.register(ArcElement, Tooltip, Legend);
+
+const CHART_COLORS = [
+  '#7c3aed','#a855f7','#10b981','#f59e0b',
+  '#ef4444','#3b82f6','#ec4899','#14b8a6',
+  '#f97316','#6366f1',
+];
+
+function StatCard({ label, value, color, sub }) {
+  return (
+    <div className="stat-card fade-in">
+      <p style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
+        {label}
+      </p>
+      <p style={{ fontSize: 26, fontWeight: 800, color: color || 'var(--text-primary)', marginBottom: 4 }}>
+        {value}
+      </p>
+      {sub && <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{sub}</p>}
+    </div>
+  );
+}
 
 function Dashboard() {
-    const [summary, setSummary] = useState([]);
-    const [healthScore, setHealthScore] = useState(null);
-    const [recentExpenses, setRecentExpenses] = useState([]);
+  const [summary, setSummary] = useState([]);
+  const [health, setHealth] = useState(null);
+  const [recent, setRecent] = useState([]);
+  const name = localStorage.getItem('name') || 'User';
+  const token = localStorage.getItem('token');
+  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
-    const token = localStorage.getItem('token');
-    const name = localStorage.getItem('name');
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    };
+  useEffect(() => {
+    fetch('http://localhost:8000/expenses/summary', { headers }).then(r => r.json()).then(setSummary).catch(() => {});
+    fetch('http://localhost:8000/expenses/health-score', { headers }).then(r => r.json()).then(setHealth).catch(() => {});
+    fetch('http://localhost:8000/expenses', { headers }).then(r => r.json()).then(d => setRecent(Array.isArray(d) ? d.slice(0, 6) : [])).catch(() => {});
+  }, []);
 
-    useEffect(() => {
-        fetch('http://localhost:8000/expenses/summary', { headers })
-            .then(r => r.json()).then(setSummary);
+  const scoreColor = !health ? 'var(--text-secondary)'
+    : health.score >= 70 ? 'var(--accent-green)'
+    : health.score >= 50 ? 'var(--accent)'
+    : health.score >= 30 ? 'var(--accent-yellow)'
+    : 'var(--accent-red)';
 
-        fetch('http://localhost:8000/expenses/health-score', { headers })
-            .then(r => r.json()).then(setHealthScore);
+  const pieData = {
+    labels: summary.map(s => s.category),
+    datasets: [{
+      data: summary.map(s => s.total),
+      backgroundColor: CHART_COLORS,
+      borderWidth: 0,
+    }],
+  };
 
-        fetch('http://localhost:8000/expenses', { headers })
-            .then(r => r.json())
-            .then(data => setRecentExpenses(data.slice(0, 5)));
-    }, []);
+  const categoryColors = {
+    Food: '#f97316', Travel: '#3b82f6', Rent: '#ef4444',
+    Entertainment: '#a855f7', Medical: '#10b981', Shopping: '#ec4899',
+    Recharge: '#14b8a6', EMI: '#f59e0b', Subscriptions: '#6366f1',
+    Education: '#7c3aed', Other: '#94a3b8',
+  };
 
-    const pieData = {
-        labels: summary.map(s => s.category),
-        datasets: [{
-            data: summary.map(s => s.total),
-            backgroundColor: [
-                '#FF6384', '#36A2EB', '#FFCE56',
-                '#4BC0C0', '#9966FF', '#FF9F40',
-                '#FF6384', '#C9CBCF', '#4BC0C0', '#FF9F40'
-            ]
-        }]
-    };
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+      <Navbar />
+      <div className="page-container">
 
-    const scoreColor = healthScore?.score >= 70 ? 'success'
-        : healthScore?.score >= 50 ? 'primary'
-        : healthScore?.score >= 30 ? 'warning' : 'danger';
-
-    return (
-        <div>
-            <Navbar />
-            <div className="container mt-4">
-                <h3>Welcome back, {name} 👋</h3>
-
-                {/* Health Score + Summary Cards */}
-                {healthScore && (
-                    <div className="row mt-3 mb-4">
-                        <div className="col-md-3">
-                            <div className={`card text-white bg-${scoreColor} p-3 text-center`}>
-                                <h6>Financial Health Score</h6>
-                                <h1>{healthScore.score}/100</h1>
-                                <p>{healthScore.label}</p>
-                            </div>
-                        </div>
-                        <div className="col-md-3">
-                            <div className="card p-3 text-center">
-                                <h6>Income This Month</h6>
-                                <h3 className="text-success">
-                                    ₹{healthScore.total_income.toFixed(0)}
-                                </h3>
-                            </div>
-                        </div>
-                        <div className="col-md-3">
-                            <div className="card p-3 text-center">
-                                <h6>Expenses This Month</h6>
-                                <h3 className="text-danger">
-                                    ₹{healthScore.total_expenses.toFixed(0)}
-                                </h3>
-                            </div>
-                        </div>
-                        <div className="col-md-3">
-                            <div className="card p-3 text-center">
-                                <h6>Savings This Month</h6>
-                                <h3 className={healthScore.savings >= 0 ? 'text-success' : 'text-danger'}>
-                                    ₹{healthScore.savings.toFixed(0)}
-                                </h3>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <div className="row">
-                    {/* Pie Chart */}
-                    <div className="col-md-5">
-                        <div className="card p-3">
-                            <h5>Spending by Category</h5>
-                            {summary.length > 0
-                                ? <Pie data={pieData} />
-                                : <p className="text-muted">No expenses this month yet.</p>
-                            }
-                        </div>
-                    </div>
-
-                    {/* Recent Expenses */}
-                    <div className="col-md-7">
-                        <div className="card p-3">
-                            <h5>Recent Expenses</h5>
-                            {recentExpenses.length === 0
-                                ? <p className="text-muted">No expenses yet.</p>
-                                : (
-                                    <table className="table table-sm">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Category</th>
-                                                <th>Amount</th>
-                                                <th>Note</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {recentExpenses.map(e => (
-                                                <tr key={e.id}>
-                                                    <td>{e.date}</td>
-                                                    <td>
-                                                        <span className="badge bg-primary">
-                                                            {e.category}
-                                                        </span>
-                                                    </td>
-                                                    <td>₹{e.amount}</td>
-                                                    <td>{e.note}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                )
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
+        {/* Greeting */}
+        <div className="fade-in" style={{ marginBottom: 28 }}>
+          <h2 style={{ fontSize: 26, fontWeight: 800 }}>
+            Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, {name} 👋
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 4 }}>
+            Here's your financial overview for {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
+          </p>
         </div>
-    );
+
+        {/* Stat Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
+          <StatCard
+            label="Health Score"
+            value={health ? `${health.score}/100` : '—'}
+            color={scoreColor}
+            sub={health?.label}
+          />
+          <StatCard
+            label="Income This Month"
+            value={health ? `₹${health.total_income.toFixed(0)}` : '—'}
+            color="var(--accent-green)"
+          />
+          <StatCard
+            label="Expenses This Month"
+            value={health ? `₹${health.total_expenses.toFixed(0)}` : '—'}
+            color="var(--accent-red)"
+          />
+          <StatCard
+            label="Savings"
+            value={health ? `₹${health.savings.toFixed(0)}` : '—'}
+            color={health?.savings >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}
+            sub={health?.savings >= 0 ? "You're saving! 🎉" : "Spending more than income"}
+          />
+        </div>
+
+        {/* Main Content */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 20, marginBottom: 20 }}>
+
+          {/* Pie Chart */}
+          <div className="card-modern">
+            <p className="section-title" style={{ fontSize: 16, marginBottom: 20 }}>Spending by Category</p>
+            {summary.length > 0 ? (
+              <Pie
+                data={pieData}
+                options={{
+                  plugins: {
+                    legend: {
+                      position: 'bottom',
+                      labels: { color: 'var(--text-secondary)', font: { size: 11 }, padding: 12 },
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: ctx => ` ₹${ctx.raw.toFixed(0)}`
+                      }
+                    }
+                  },
+                }}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No expenses yet</p>
+                <Link to="/expenses" style={{ color: 'var(--accent-light)', fontSize: 13, textDecoration: 'none' }}>
+                  Add your first expense →
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Recent Expenses */}
+          <div className="card-modern">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <p style={{ fontSize: 16, fontWeight: 700 }}>Recent Expenses</p>
+              <Link to="/expenses" style={{ color: 'var(--accent-light)', fontSize: 13, textDecoration: 'none' }}>
+                View all →
+              </Link>
+            </div>
+            {recent.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>💸</div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No expenses logged yet</p>
+              </div>
+            ) : (
+              <div>
+                {recent.map((e, i) => (
+                  <div
+                    key={e.id}
+                    className="slide-in"
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '12px 0',
+                      borderBottom: i < recent.length - 1 ? '1px solid var(--border)' : 'none',
+                      animationDelay: `${i * 0.05}s`,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{
+                        width: 36, height: 36, borderRadius: 10,
+                        background: `${categoryColors[e.category] || '#7c3aed'}22`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 16,
+                      }}>
+                        {e.category === 'Food' ? '🍔' : e.category === 'Travel' ? '✈️' : e.category === 'Rent' ? '🏠' : '💳'}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 2 }}>
+                          {e.note || e.category}
+                        </p>
+                        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{e.date}</p>
+                      </div>
+                    </div>
+                    <span style={{ fontWeight: 700, color: 'var(--accent-red)', fontSize: 15 }}>
+                      -₹{e.amount}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="card-modern">
+          <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Quick Actions</p>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {[
+              { to: '/expenses', label: '+ Add Expense', color: '#7c3aed' },
+              { to: '/income', label: '+ Add Income', color: '#10b981' },
+              { to: '/groups', label: '+ New Group', color: '#3b82f6' },
+              { to: '/goals', label: '+ New Goal', color: '#f59e0b' },
+              { to: '/calculator', label: '🧮 Calculator', color: '#ec4899' },
+              { to: '/education', label: '📚 Learn', color: '#14b8a6' },
+            ].map(action => (
+              <Link
+                key={action.to}
+                to={action.to}
+                style={{
+                  background: `${action.color}18`,
+                  border: `1px solid ${action.color}44`,
+                  borderRadius: 10,
+                  padding: '8px 16px',
+                  color: action.color,
+                  textDecoration: 'none',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = `${action.color}30`}
+                onMouseLeave={e => e.currentTarget.style.background = `${action.color}18`}
+              >
+                {action.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
 }
 
 export default Dashboard;
