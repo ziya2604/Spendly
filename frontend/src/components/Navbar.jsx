@@ -1,121 +1,344 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../utils/ThemeContext';
-import {FaHome,FaWallet,FaMoneyBillWave,FaBullseye,FaUsers,FaBook,FaCalculator,FaReceipt,FaCalendarAlt,FaTrophy,FaCreditCard} from 'react-icons/fa';
-const navItems=[
-{path:'/dashboard',label:'Dashboard',icon:<FaHome/>},
-{path:'/expenses',label:'Expenses',icon:<FaWallet/>},
-{path:'/income',label:'Income',icon:<FaMoneyBillWave/>},
-{path:'/budgets',label:'Budgets',icon:<FaReceipt/>},
-{path:'/groups',label:'Groups',icon:<FaUsers/>},
-{path:'/goals',label:'Goals',icon:<FaBullseye/>},
-{path:'/debts',label:'Debts',icon:<FaCreditCard/>},
-{path:'/bills',label:'Bills',icon:<FaCalendarAlt/>},
-{path:'/challenges',label:'Challenges',icon:<FaTrophy/>},
-{path:'/education',label:'Learn',icon:<FaBook/>},
-{path:'/calculator',label:'Calculator',icon:<FaCalculator/>},
+
+const LINKS = [
+  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/expenses', label: 'Expenses' },
+  { to: '/income', label: 'Income' },
+  { to: '/budgets', label: 'Budgets' },
+  { to: '/goals', label: 'Goals' },
+  { to: '/groups', label: 'Groups' },
+  { to: '/debts', label: 'Debts' },
+  { to: '/bills', label: 'Bills' },
+  { to: '/challenges', label: 'Challenges' },
+  { to: '/education', label: 'Learn' },
+  { to: '/calculator', label: 'Calculator' },
 ];
 
 function Navbar() {
+
+  const { pathname } = useLocation();
+
   const navigate = useNavigate();
-  const location = useLocation();
+
   const { theme, toggle } = useTheme();
+
   const name = localStorage.getItem('name') || 'User';
 
+  const initial = name[0].toUpperCase();
+
   const logout = () => {
+
     localStorage.clear();
+
     navigate('/login');
+
   };
 
   return (
-    <nav className="navbar-modern">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-        <div className="logo-text">
-            <div className="logo-finance">
-                <div className="bar bar1"></div>
-                <div className="bar bar2"></div>
-                <div className="bar bar3"></div>
+
+    <nav
+      style={{
+
+        position: 'sticky',
+
+        top: 0,
+
+        zIndex: 1000,
+
+        height: '68px',
+
+        background: 'rgba(18,18,24,0.85)',
+
+        backdropFilter: 'blur(12px)',
+
+        borderBottom: '1px solid var(--border)',
+
+        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+
+        display: 'flex',
+
+        alignItems: 'center',
+
+        padding: '0 22px',
+
+      }}
+    >
+
+      {/* Logo */}
+
+      <Link
+        to="/dashboard"
+        style={{
+          textDecoration: 'none',
+          flexShrink: 0,
+          marginRight: 28,
+        }}
+      >
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+
+          <div
+            style={{
+
+              width: 36,
+
+              height: 36,
+
+              borderRadius: 12,
+
+              background:
+                'linear-gradient(135deg,#7c3aed,#4f46e5)',
+
+              display: 'flex',
+
+              alignItems: 'center',
+
+              justifyContent: 'center',
+
+              color: '#fff',
+
+              fontWeight: 700,
+
+              fontSize: 18,
+
+              boxShadow:
+                '0 6px 18px rgba(124,58,237,0.35)',
+
+            }}
+          >
+
+            ₹
+
+          </div>
+
+          <div>
+
+            <div
+              style={{
+                color: 'var(--text)',
+                fontWeight: 700,
+                fontSize: 19,
+                letterSpacing: '-0.03em',
+              }}
+            >
+
+              Spendly
+
             </div>
 
-            <span>
-                Spendly
-            </span>
-            </div>
-        <div className="nav-links" style={{ flexWrap: 'wrap' }}>
-          {navItems.map(item => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`nav-link-modern ${location.pathname === item.path ? 'active' : ''}`}
+            <div
+              style={{
+                color: 'var(--text2)',
+                fontSize: 11,
+                marginTop: -2,
+              }}
             >
-              {item.icon} {item.label}
-            </Link>
-          ))}
+
+              Smart Finance
+
+            </div>
+
+          </div>
+
         </div>
+
+      </Link>
+
+      {/* Nav */}
+
+      <div
+        style={{
+
+          display: 'flex',
+
+          flex: 1,
+
+          overflowX: 'auto',
+
+          scrollbarWidth: 'none',
+
+          gap: 4,
+
+          alignItems: 'center',
+
+        }}
+      >
+
+        {LINKS.map((link) => {
+
+          const active =
+            pathname === link.to;
+
+          return (
+
+            <Link
+              key={link.to}
+              to={link.to}
+              style={{
+
+                textDecoration: 'none',
+
+                padding: '9px 14px',
+
+                fontSize: 13,
+
+                borderRadius: 10,
+
+                whiteSpace: 'nowrap',
+
+                transition:
+                  'all 0.22s ease',
+
+                fontWeight:
+                  active ? 600 : 500,
+
+                color:
+                  active
+                    ? '#8b5cf6'
+                    : 'var(--text2)',
+
+                background:
+                  active
+                    ? 'rgba(124,58,237,0.12)'
+                    : 'transparent',
+
+              }}
+              onMouseEnter={(e) => {
+
+                if (!active) {
+
+                  e.currentTarget.style.color =
+                    'var(--text)';
+
+                }
+
+              }}
+              onMouseLeave={(e) => {
+
+                if (!active) {
+
+                  e.currentTarget.style.color =
+                    'var(--text2)';
+
+                }
+
+              }}
+            >
+
+              {link.label}
+
+            </Link>
+
+          );
+
+        })}
+
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* Right Side */}
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          flexShrink: 0,
+        }}
+      >
+
         <button
           onClick={toggle}
+          className="btn btn-ghost"
           style={{
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            padding: '6px 12px',
-            color: 'var(--text-primary)',
-            cursor: 'pointer',
-            fontSize: 16,
+            padding: '8px 10px',
+            fontSize: 15,
           }}
-          title="Toggle theme"
         >
-          {theme === 'dark' ? '☀️' : '🌙'}
+
+          {theme === 'dark'
+            ? '☀️'
+            : '🌙'}
+
         </button>
 
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border)',
-          borderRadius: 10, padding: '6px 14px',
-        }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontWeight: 700, fontSize: 13,
-          }}>
-            {name[0].toUpperCase()}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+
+          <div
+            style={{
+
+              width: 36,
+
+              height: 36,
+
+              borderRadius: '50%',
+
+              background:
+                'linear-gradient(135deg,#7c3aed,#4f46e5)',
+
+              display: 'flex',
+
+              alignItems: 'center',
+
+              justifyContent: 'center',
+
+              color: '#fff',
+
+              fontWeight: 600,
+
+              fontSize: 13,
+
+            }}
+          >
+
+            {initial}
+
           </div>
-          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
+
+          <span
+            style={{
+              color: 'var(--text)',
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
+
             {name}
+
           </span>
+
         </div>
 
         <button
           onClick={logout}
+          className="btn btn-ghost"
           style={{
-            background: 'transparent',
-            border: '1px solid var(--accent-red)',
-            borderRadius: 8,
-            padding: '6px 14px',
-            color: 'var(--accent-red)',
-            cursor: 'pointer',
             fontSize: 13,
-            fontWeight: 600,
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => {
-            e.target.style.background = 'var(--accent-red)';
-            e.target.style.color = 'white';
-          }}
-          onMouseLeave={e => {
-            e.target.style.background = 'transparent';
-            e.target.style.color = 'var(--accent-red)';
           }}
         >
+
           Logout
+
         </button>
+
       </div>
+
     </nav>
+
   );
+
 }
 
 export default Navbar;

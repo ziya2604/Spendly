@@ -2,24 +2,18 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 function Signup() {
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
-  const [error, setError] = useState('');
+  const [form, setForm]       = useState({ name: '', email: '', password: '' });
+  const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async () => {
-    if (!form.name || !form.email || !form.password) {
-      setError('Please fill in all fields');
-      return;
-    }
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
+  const submit = async () => {
+    if (!form.name || !form.email || !form.password) { setError('Fill in all fields'); return; }
+    if (form.password.length < 6) { setError('Password must be 6+ characters'); return; }
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:8000/auth/signup', {
+      const res  = await fetch('http://localhost:8000/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -34,7 +28,7 @@ function Signup() {
         setError(data.detail || 'Signup failed');
       }
     } catch {
-      setError('Could not connect to server');
+      setError('Cannot reach server');
     }
     setLoading(false);
   };
@@ -42,77 +36,68 @@ function Signup() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--bg-primary)',
+      background: 'var(--surface2)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
+      padding: 16,
     }}>
-      <div style={{
-        position: 'fixed', width: 400, height: 400,
-        background: 'radial-gradient(circle, rgba(124,58,237,0.12), transparent 70%)',
-        bottom: '10%', right: '15%', pointerEvents: 'none',
-      }} />
+      <div className="fade-up" style={{ width: '100%', maxWidth: 400 }}>
 
-      <div className="fade-in" style={{ width: '100%', maxWidth: 420, padding: '0 16px' }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>💜</div>
-          <h1 className="logo-text" style={{ fontSize: 28 }}>Spendly</h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: 6, fontSize: 14 }}>
-            Take control of your money today
-          </p>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <h1 style={{ color: 'var(--blue)', fontSize: 26, letterSpacing: '-0.03em' }}>
+            Spendly
+          </h1>
+          <p className="text-muted mt-4">Create your free account</p>
         </div>
 
-        <div className="card-modern">
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Create account</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 24 }}>
-            Free forever. No credit card needed.
-          </p>
+        <div className="card" style={{ padding: 28 }}>
 
           {error && (
-            <div style={{
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 10, padding: '10px 14px',
-              color: '#ef4444', fontSize: 13, marginBottom: 16,
+            <div className="badge-red mb-16" style={{
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-sm)',
+              background: '#fef2f2',
+              color: 'var(--red)',
+              fontSize: 13,
+              marginBottom: 16,
             }}>
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
           {[
-            { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Zara Khan' },
-            { key: 'email', label: 'Email Address', type: 'email', placeholder: 'you@example.com' },
-            { key: 'password', label: 'Password', type: 'password', placeholder: '••••••••' },
-          ].map(field => (
-            <div key={field.key} style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
-                {field.label}
-              </label>
+            { key: 'name',     label: 'Full name',      type: 'text',     ph: 'Your name' },
+            { key: 'email',    label: 'Email address',  type: 'email',    ph: 'you@example.com' },
+            { key: 'password', label: 'Password',       type: 'password', ph: '6+ characters' },
+          ].map(f => (
+            <div key={f.key} className="mb-16">
+              <label className="label">{f.label}</label>
               <input
-                className="input-modern"
-                type={field.type}
-                placeholder={field.placeholder}
-                value={form[field.key]}
-                onChange={e => setForm({ ...form, [field.key]: e.target.value })}
-                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                className="input"
+                type={f.type}
+                placeholder={f.ph}
+                value={form[f.key]}
+                onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                onKeyDown={e => e.key === 'Enter' && submit()}
               />
             </div>
           ))}
 
-          <div style={{ marginTop: 8, marginBottom: 24 }}>
-            <button
-              className="btn-primary-modern"
-              onClick={handleSubmit}
-              disabled={loading}
-              style={{ opacity: loading ? 0.7 : 1 }}
-            >
-              {loading ? '⏳ Creating account...' : 'Get Started →'}
-            </button>
-          </div>
+          <button
+            className="btn btn-primary w-full mt-4"
+            onClick={submit}
+            disabled={loading}
+            style={{ justifyContent: 'center', height: 42, opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? 'Creating account…' : 'Create account'}
+          </button>
 
-          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)' }}>
-            Already have an account?{' '}
-            <Link to="/login" style={{ color: 'var(--accent-light)', fontWeight: 600, textDecoration: 'none' }}>
+          <hr className="divider" style={{ margin: '20px 0' }} />
+
+          <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)' }}>
+            Have an account?{' '}
+            <Link to="/login" style={{ color: 'var(--blue)', fontWeight: 500, textDecoration: 'none' }}>
               Sign in
             </Link>
           </p>

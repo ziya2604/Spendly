@@ -2,20 +2,17 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 function Login() {
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+  const [form, setForm]     = useState({ email: '', password: '' });
+  const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async () => {
-    if (!form.email || !form.password) {
-      setError('Please fill in all fields');
-      return;
-    }
+  const submit = async () => {
+    if (!form.email || !form.password) { setError('Fill in all fields'); return; }
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:8000/auth/login', {
+      const res  = await fetch('http://localhost:8000/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -30,95 +27,86 @@ function Login() {
         setError(data.detail || 'Login failed');
       }
     } catch {
-      setError('Could not connect to server');
+      setError('Cannot reach server. Is the backend running?');
     }
     setLoading(false);
   };
 
   return (
+    // Full page centered layout
     <div style={{
       minHeight: '100vh',
-      background: 'var(--bg-primary)',
+      background: 'var(--surface2)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
+      padding: 16,
     }}>
-      {/* Background glow */}
-      <div style={{
-        position: 'fixed', width: 400, height: 400,
-        background: 'radial-gradient(circle, rgba(124,58,237,0.15), transparent 70%)',
-        top: '10%', left: '20%', pointerEvents: 'none',
-      }} />
+      <div className="fade-up" style={{ width: '100%', maxWidth: 400 }}>
 
-      <div className="fade-in" style={{ width: '100%', maxWidth: 420, padding: '0 16px' }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>💜</div>
-          <h1 className="logo-text" style={{ fontSize: 28 }}>Spendly</h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: 6, fontSize: 14 }}>
-            Your personal finance companion
+        {/* Brand */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <h1 style={{ color: 'var(--blue)', fontSize: 26, letterSpacing: '-0.03em' }}>
+            Spendly
+          </h1>
+          <p className="text-muted mt-4" style={{ fontSize: 14 }}>
+            Sign in to your account
           </p>
         </div>
 
         {/* Card */}
-        <div className="card-modern">
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Welcome back</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 24 }}>
-            Sign in to continue to your dashboard
-          </p>
+        <div className="card" style={{ padding: 28 }}>
 
           {error && (
-            <div style={{
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 10, padding: '10px 14px',
-              color: '#ef4444', fontSize: 13, marginBottom: 16,
+            <div className="badge badge-red mb-16" style={{
+              width: '100%',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-sm)',
+              display: 'block',
             }}>
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
-              Email Address
-            </label>
+          <div className="mb-16">
+            <label className="label">Email address</label>
             <input
-              className="input-modern"
+              className="input"
               type="email"
               placeholder="you@example.com"
               value={form.email}
               onChange={e => setForm({ ...form, email: e.target.value })}
-              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              onKeyDown={e => e.key === 'Enter' && submit()}
             />
           </div>
 
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
-              Password
-            </label>
+          <div className="mb-20">
+            <label className="label">Password</label>
             <input
-              className="input-modern"
+              className="input"
               type="password"
               placeholder="••••••••"
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
-              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              onKeyDown={e => e.key === 'Enter' && submit()}
             />
           </div>
 
           <button
-            className="btn-primary-modern"
-            onClick={handleSubmit}
+            className="btn btn-primary w-full"
+            onClick={submit}
             disabled={loading}
-            style={{ opacity: loading ? 0.7 : 1 }}
+            style={{ justifyContent: 'center', height: 42, opacity: loading ? 0.7 : 1 }}
           >
-            {loading ? '⏳ Signing in...' : 'Sign In →'}
+            {loading ? 'Signing in…' : 'Sign in'}
           </button>
 
-          <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
-            Don't have an account?{' '}
-            <Link to="/signup" style={{ color: 'var(--accent-light)', fontWeight: 600, textDecoration: 'none' }}>
-              Create one
+          <hr className="divider" style={{ margin: '20px 0' }} />
+
+          <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)' }}>
+            No account?{' '}
+            <Link to="/signup" style={{ color: 'var(--blue)', fontWeight: 500, textDecoration: 'none' }}>
+              Create one free
             </Link>
           </p>
         </div>

@@ -1,293 +1,217 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
-const CATEGORIES = [
-  { name: 'Food',          icon: '🍔' },
-  { name: 'Travel',        icon: '✈️' },
-  { name: 'Rent',          icon: '🏠' },
-  { name: 'Entertainment', icon: '🎬' },
-  { name: 'Medical',       icon: '💊' },
-  { name: 'Shopping',      icon: '🛍️' },
-  { name: 'Recharge',      icon: '📱' },
-  { name: 'EMI',           icon: '🏦' },
-  { name: 'Subscriptions', icon: '📺' },
-  { name: 'Education',     icon: '📚' },
-  { name: 'Other',         icon: '📌' },
-];
+const CATS = ['Food','Travel','Rent','Entertainment','Medical','Shopping','Recharge','EMI','Subscriptions','Education','Other'];
 
-const CAT_COLORS = {
-  Food: '#f97316', Travel: '#3b82f6', Rent: '#ef4444',
-  Entertainment: '#a855f7', Medical: '#10b981', Shopping: '#ec4899',
-  Recharge: '#14b8a6', EMI: '#f59e0b', Subscriptions: '#6366f1',
-  Education: '#7c3aed', Other: '#94a3b8',
+const CAT_COLOR = {
+  Food:'#2563eb',Travel:'#7c3aed',Rent:'#dc2626',Entertainment:'#d97706',
+  Medical:'#16a34a',Shopping:'#0891b2',Recharge:'#9333ea',EMI:'#ea580c',
+  Subscriptions:'#0d9488',Education:'#4f46e5',Other:'#6b7280',
 };
 
 function Expenses() {
   const [expenses, setExpenses] = useState([]);
+  const [filter,   setFilter]   = useState('All');
+  const [showForm, setShowForm] = useState(false);
+  const [showSms,  setShowSms]  = useState(false);
+  const [sms,      setSms]      = useState('');
   const [form, setForm] = useState({
     amount: '', category: 'Food', note: '', tags: '',
     date: new Date().toISOString().split('T')[0],
   });
-  const [smsText, setSmsText] = useState('');
-  const [showSms, setShowSms] = useState(false);
-  const [filter, setFilter] = useState('All');
-  const [showForm, setShowForm] = useState(false);
 
   const token = localStorage.getItem('token');
-  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+  const H = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
-  const fetchExpenses = async () => {
-    const res = await fetch('http://localhost:8000/expenses', { headers });
-    const data = await res.json();
-    setExpenses(Array.isArray(data) ? data : []);
-  };
+  const load = () =>
+    fetch('http://localhost:8000/expenses', { headers: H })
+      .then(r => r.json()).then(d => Array.isArray(d) && setExpenses(d));
 
-  useEffect(() => { fetchExpenses(); }, []);
+  useEffect(() => { load(); }, []);
 
-  const handleAdd = async () => {
-    if (!form.amount || !form.date) return;
+  const add = async () => {
+    if (!form.amount) return;
     await fetch('http://localhost:8000/expenses', {
-      method: 'POST', headers, body: JSON.stringify(form),
+      method: 'POST', headers: H, body: JSON.stringify(form),
     });
     setForm({ amount: '', category: 'Food', note: '', tags: '', date: new Date().toISOString().split('T')[0] });
     setShowForm(false);
-    fetchExpenses();
+    load();
   };
 
-  const handleDelete = async (id) => {
+  const del = async id => {
     if (!window.confirm('Delete this expense?')) return;
-    await fetch(`http://localhost:8000/expenses/${id}`, { method: 'DELETE', headers });
-    fetchExpenses();
+    await fetch(`http://localhost:8000/expenses/${id}`, { method: 'DELETE', headers: H });
+    load();
   };
 
-  const parseSMS = () => {
-    const amountMatch = smsText.match(/(?:rs\.?|inr\.?|₹)\s*(\d+(?:\.\d{1,2})?)/i);
-    const merchantMatch = smsText.match(/(?:to|at|for)\s+([A-Za-z0-9\s]+?)(?:\s+on|\s+via|\s+ref|\.)/i);
-    const dateMatch = smsText.match(/(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/);
-    if (amountMatch) {
-      let date = new Date().toISOString().split('T')[0];
-      if (dateMatch) {
-        const parts = dateMatch[1].split(/[-\/]/);
-        if (parts.length === 3) {
-          date = `${parts[2].length === 2 ? '20' + parts[2] : parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
-        }
-      }
-      setForm({ ...form, amount: amountMatch[1], note: merchantMatch ? merchantMatch[1].trim() : '', date });
-      setShowSms(false);
-      setSmsText('');
-      setShowForm(true);
+  // Regex-based SMS parser
+  const parseSms = () => {
+    const amt  = sms.match(/(?:rs\.?|inr\.?|₹)\s*(\d+(?:\.\d{1,2})?)/i);
+    const merc = sms.match(/(?:to|at|for)\s+([A-Za-z0-9 ]+?)(?:\s+on|\s+via|\.|$)/i);
+    if (amt) {
+      setForm(f => ({ ...f, amount: amt[1], note: merc ? merc[1].trim() : '' }));
+      setShowSms(false); setSms(''); setShowForm(true);
     }
   };
 
   const filtered = filter === 'All' ? expenses : expenses.filter(e => e.category === filter);
-  const total = filtered.reduce((s, e) => s + e.amount, 0);
+  const total    = filtered.reduce((s, e) => s + Number(e.amount), 0);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--surface2)' }}>
       <Navbar />
-      <div className="page-container">
+
+      <main className="page" style={{ flex: 1 }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div className="flex justify-between items-center mb-20">
           <div>
-            <h2 className="section-title" style={{ marginBottom: 4 }}>💸 Expenses</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-              {filtered.length} transactions · Total ₹{total.toFixed(0)}
+            <h2 style={{ fontSize: 22, fontWeight: 700 }}>Expenses</h2>
+            <p className="text-muted mt-4 text-sm">
+              {filtered.length} transactions · Total ₹{total.toLocaleString('en-IN')}
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              onClick={() => setShowSms(!showSms)}
-              style={{
-                background: 'var(--bg-card)', border: '1px solid var(--border)',
-                borderRadius: 10, padding: '8px 16px', color: 'var(--text-secondary)',
-                cursor: 'pointer', fontSize: 13, fontWeight: 500,
-              }}
-            >
+          <div className="flex gap-8">
+            <button className="btn btn-ghost" onClick={() => setShowSms(s => !s)}>
               📱 UPI SMS
             </button>
-            <button
-              onClick={() => setShowForm(!showForm)}
-              style={{
-                background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-                border: 'none', borderRadius: 10, padding: '8px 16px',
-                color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600,
-              }}
-            >
-              + Add Expense
+            <button className="btn btn-primary" onClick={() => setShowForm(s => !s)}>
+              + Add expense
             </button>
           </div>
         </div>
 
-        {/* SMS Parser */}
+        {/* SMS parser panel */}
         {showSms && (
-          <div className="card-modern fade-in" style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>📱 Paste UPI SMS</p>
+          <div className="card fade-up mb-16">
+            <h3 className="mb-8" style={{ fontSize: 14 }}>Paste your UPI SMS</h3>
             <textarea
-              className="input-modern"
+              className="input mb-8"
               rows={3}
-              placeholder='E.g. "Rs.450 debited from SBI to Swiggy on 25-05-26 via UPI"'
-              value={smsText}
-              onChange={e => setSmsText(e.target.value)}
-              style={{ resize: 'none', marginBottom: 12 }}
+              placeholder='E.g. "Rs.450 debited to Swiggy on 25-05-26 via UPI Ref 123456"'
+              value={sms}
+              onChange={e => setSms(e.target.value)}
+              style={{ resize: 'none' }}
             />
-            <button
-              onClick={parseSMS}
-              style={{
-                background: 'var(--accent)', border: 'none', borderRadius: 8,
-                padding: '8px 20px', color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600,
-              }}
-            >
-              Extract Details
+            <button className="btn btn-primary" onClick={parseSms}>
+              Extract details
             </button>
           </div>
         )}
 
-        {/* Add Form */}
+        {/* Add form */}
         {showForm && (
-          <div className="card-modern fade-in" style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>New Expense</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+          <div className="card fade-up mb-16">
+            <h3 className="mb-16" style={{ fontSize: 14 }}>New expense</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14 }}>
+              {[
+                { key: 'amount',   label: 'Amount ₹',  type: 'number', ph: '0' },
+                { key: 'note',     label: 'Description',type: 'text',   ph: 'What was this?' },
+                { key: 'tags',     label: 'Tags',       type: 'text',   ph: 'e.g. college' },
+                { key: 'date',     label: 'Date',       type: 'date',   ph: '' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="label">{f.label}</label>
+                  <input
+                    className="input"
+                    type={f.type}
+                    placeholder={f.ph}
+                    value={form[f.key]}
+                    onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                  />
+                </div>
+              ))}
               <div>
-                <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Amount ₹</label>
-                <input className="input-modern" type="number" placeholder="0.00"
-                  value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Category</label>
-                <select className="input-modern" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
-                  {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.icon} {c.name}</option>)}
+                <label className="label">Category</label>
+                <select className="input" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                  {CATS.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Note</label>
-                <input className="input-modern" placeholder="What was this for?"
-                  value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Tags</label>
-                <input className="input-modern" placeholder="e.g. college, trip"
-                  value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Date</label>
-                <input className="input-modern" type="date"
-                  value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
-              </div>
             </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-              <button onClick={handleAdd} style={{
-                background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-                border: 'none', borderRadius: 10, padding: '10px 24px',
-                color: 'white', cursor: 'pointer', fontWeight: 600, fontSize: 14,
-              }}>
-                Save Expense
-              </button>
-              <button onClick={() => setShowForm(false)} style={{
-                background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-                borderRadius: 10, padding: '10px 24px', color: 'var(--text-secondary)',
-                cursor: 'pointer', fontSize: 14,
-              }}>
-                Cancel
-              </button>
+            <div className="flex gap-8 mt-16">
+              <button className="btn btn-primary" onClick={add}>Save expense</button>
+              <button className="btn btn-ghost"   onClick={() => setShowForm(false)}>Cancel</button>
             </div>
           </div>
         )}
 
-        {/* Category Filter */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-          {['All', ...CATEGORIES.map(c => c.name)].map(cat => (
+        {/* Category filter pills */}
+        <div className="flex gap-8 mb-16" style={{ flexWrap: 'wrap' }}>
+          {['All', ...CATS].map(c => (
             <button
-              key={cat}
-              onClick={() => setFilter(cat)}
+              key={c}
+              onClick={() => setFilter(c)}
+              className="btn"
               style={{
-                background: filter === cat ? 'var(--accent)' : 'var(--bg-card)',
-                border: `1px solid ${filter === cat ? 'var(--accent)' : 'var(--border)'}`,
-                borderRadius: 20, padding: '5px 14px',
-                color: filter === cat ? 'white' : 'var(--text-secondary)',
-                cursor: 'pointer', fontSize: 12, fontWeight: 500, transition: 'all 0.2s',
+                padding: '5px 14px',
+                fontSize: 13,
+                background: filter === c ? 'var(--blue)' : 'var(--surface)',
+                color:      filter === c ? '#fff' : 'var(--text2)',
+                border:     `1px solid ${filter === c ? 'var(--blue)' : 'var(--border)'}`,
+                boxShadow:  filter === c ? '0 0 0 3px var(--blue-glow)' : 'none',
               }}
             >
-              {cat}
+              {c}
             </button>
           ))}
         </div>
 
-        {/* Expense List */}
-        <div className="card-modern">
+        {/* Expense table */}
+        <div className="card">
           {filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 0' }}>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>💸</div>
-              <p style={{ color: 'var(--text-secondary)' }}>No expenses found</p>
+            <div className="text-center" style={{ padding: '48px 0', color: 'var(--text2)' }}>
+              No expenses yet.
             </div>
           ) : (
-            <div>
-              {filtered.map((e, i) => (
-                <div
-                  key={e.id}
-                  className="slide-in"
-                  style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '14px 0',
-                    borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
-                    animationDelay: `${i * 0.03}s`,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{
-                      width: 40, height: 40, borderRadius: 10,
-                      background: `${CAT_COLORS[e.category] || '#7c3aed'}22`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-                    }}>
-                      {CATEGORIES.find(c => c.name === e.category)?.icon || '💳'}
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 2 }}>
-                        {e.note || e.category}
-                      </p>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <span style={{
-                          fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                          background: `${CAT_COLORS[e.category] || '#7c3aed'}22`,
-                          color: CAT_COLORS[e.category] || '#7c3aed',
-                        }}>
-                          {e.category}
-                        </span>
-                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{e.date}</span>
-                        {e.tags && (
-                          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                            #{e.tags}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontWeight: 700, color: 'var(--accent-red)', fontSize: 15 }}>
-                      -₹{e.amount}
-                    </span>
-                    <button
-                      onClick={() => handleDelete(e.id)}
-                      style={{
-                        background: 'transparent', border: 'none',
-                        color: 'var(--text-secondary)', cursor: 'pointer',
-                        fontSize: 16, padding: 4, borderRadius: 6,
-                        transition: 'color 0.2s',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-red)'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-                      title="Delete"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Tags</th>
+                  <th>Date</th>
+                  <th className="text-right">Amount</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(e => (
+                  <tr key={e.id}>
+                    <td style={{ fontWeight: 500 }}>{e.note || '—'}</td>
+                    <td>
+                      <span className="badge" style={{
+                        background: (CAT_COLOR[e.category] || '#6b7280') + '18',
+                        color: CAT_COLOR[e.category] || '#6b7280',
+                      }}>
+                        {e.category}
+                      </span>
+                    </td>
+                    <td className="text-muted text-sm">{e.tags || '—'}</td>
+                    <td className="text-muted text-sm">{e.date}</td>
+                    <td className="text-right num font-medium text-red">
+                      −₹{Number(e.amount).toLocaleString('en-IN')}
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => del(e.id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 16, padding: '0 4px', transition: 'color 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.color = 'var(--red)'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'var(--text3)'}
+                      >
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
 
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 }

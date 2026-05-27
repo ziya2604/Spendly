@@ -1,230 +1,291 @@
 import { useState, useEffect } from 'react';
-import { Pie } from 'react-chartjs-2';
+import { Link } from 'react-router-dom';
+import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import Navbar from '../components/Navbar';
-import { Link } from 'react-router-dom';
+import Footer from '../components/Footer';
+import GoalProgress from "../components/GoalProgress";
+import SmartInsights from "../components/SmartInsights";
+import FinancialSnapshot from "../components/FinancialSnapshot";
+import AboutSpendly from "../components/AboutSpendly";
+import AchievementCards from "../components/AchievementCards";
+import SpendingTrends from "../components/SpendingTrends";
+import ActivityTimeline from "../components/ActivityTimeline";
+import WhySpendly from '../components/WhySpendly';
+import LessonCard from '../components/LessonCard';
+import FAQ from '../components/FAQ';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const CHART_COLORS = [
-  '#7c3aed','#a855f7','#10b981','#f59e0b',
-  '#ef4444','#3b82f6','#ec4899','#14b8a6',
-  '#f97316','#6366f1',
-];
+// Category colours — consistent across the app
+const CAT_COLOR = {
+  Food: '#2563eb', Travel: '#7c3aed', Rent: '#dc2626',
+  Entertainment: '#d97706', Medical: '#16a34a', Shopping: '#0891b2',
+  Recharge: '#9333ea', EMI: '#ea580c', Subscriptions: '#0d9488',
+  Education: '#4f46e5', Other: '#6b7280',
+};
 
-function StatCard({ label, value, color, sub }) {
+// Small stat card component — reused 4 times at top of dashboard
+function StatCard({ label, value, sub, subColor, icon }) {
   return (
-    <div className="stat-card fade-in">
-      <p style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
-        {label}
-      </p>
-      <p style={{ fontSize: 26, fontWeight: 800, color: color || 'var(--text-primary)', marginBottom: 4 }}>
+    // card-hover adds the glow on hover
+    <div className="card card-hover stagger" tabIndex={0} style={{ flex: 1, minWidth: 180 }}>
+      <div className="flex items-center gap-8 mb-8">
+        <span style={{ fontSize: 20 }}>{icon}</span>
+        <span className="text-xs text-muted font-medium" style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          {label}
+        </span>
+      </div>
+      <div className="num text-xl font-bold" style={{ color: 'var(--text)', marginBottom: 4 }}>
         {value}
-      </p>
-      {sub && <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{sub}</p>}
+      </div>
+      {sub && (
+        <div className="text-xs" style={{ color: subColor || 'var(--text2)' }}>
+          {sub}
+        </div>
+      )}
     </div>
   );
 }
 
 function Dashboard() {
-  const [summary, setSummary] = useState([]);
-  const [health, setHealth] = useState(null);
-  const [recent, setRecent] = useState([]);
-  const name = localStorage.getItem('name') || 'User';
+  const [summary,  setSummary]  = useState([]);
+  const [health,   setHealth]   = useState(null);
+  const [recent,   setRecent]   = useState([]);
+  const name  = localStorage.getItem('name') || 'User';
   const token = localStorage.getItem('token');
-  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+  const H     = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
+  // Fetch all data when dashboard loads
   useEffect(() => {
-    fetch('http://localhost:8000/expenses/summary', { headers }).then(r => r.json()).then(setSummary).catch(() => {});
-    fetch('http://localhost:8000/expenses/health-score', { headers }).then(r => r.json()).then(setHealth).catch(() => {});
-    fetch('http://localhost:8000/expenses', { headers }).then(r => r.json()).then(d => setRecent(Array.isArray(d) ? d.slice(0, 6) : [])).catch(() => {});
+    fetch('http://localhost:8000/expenses/summary',      { headers: H }).then(r => r.json()).then(d => Array.isArray(d) && setSummary(d)).catch(() => {});
+    fetch('http://localhost:8000/expenses/health-score', { headers: H }).then(r => r.json()).then(setHealth).catch(() => {});
+    fetch('http://localhost:8000/expenses',              { headers: H }).then(r => r.json()).then(d => Array.isArray(d) && setRecent(d.slice(0, 6))).catch(() => {});
   }, []);
 
-  const scoreColor = !health ? 'var(--text-secondary)'
-    : health.score >= 70 ? 'var(--accent-green)'
-    : health.score >= 50 ? 'var(--accent)'
-    : health.score >= 30 ? 'var(--accent-yellow)'
-    : 'var(--accent-red)';
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const pieData = {
+  const chartData = {
     labels: summary.map(s => s.category),
     datasets: [{
       data: summary.map(s => s.total),
-      backgroundColor: CHART_COLORS,
+      backgroundColor: summary.map(s => CAT_COLOR[s.category] || '#6b7280'),
       borderWidth: 0,
+      hoverOffset: 6,
     }],
   };
 
-  const categoryColors = {
-    Food: '#f97316', Travel: '#3b82f6', Rent: '#ef4444',
-    Entertainment: '#a855f7', Medical: '#10b981', Shopping: '#ec4899',
-    Recharge: '#14b8a6', EMI: '#f59e0b', Subscriptions: '#6366f1',
-    Education: '#7c3aed', Other: '#94a3b8',
+  const chartOptions = {
+    cutout: '68%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: { label: ctx => ` ₹${Number(ctx.raw).toLocaleString('en-IN')}` },
+      },
+    },
   };
 
+  const quickActions = [
+    { to: '/expenses',   label: 'Add Expense',  icon: '➕', color: 'var(--blue)'  },
+    { to: '/income',     label: 'Add Income',   icon: '💰', color: 'var(--green)' },
+    { to: '/budgets',    label: 'New Budget',   icon: '📊', color: '#7c3aed'      },
+    { to: '/goals',      label: 'New Goal',     icon: '🎯', color: 'var(--yellow)'},
+    { to: '/bills',      label: 'New Bill',     icon: '📅', color: '#0891b2'      },
+    { to: '/calculator', label: 'Calculator',   icon: '🧮', color: '#9333ea'      },
+  ];
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+    // Full page layout: navbar → content → footer
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--surface2)' }}>
       <Navbar />
-      <div className="page-container">
 
-        {/* Greeting */}
-        <div className="fade-in" style={{ marginBottom: 28 }}>
-          <h2 style={{ fontSize: 26, fontWeight: 800 }}>
-            Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, {name} 👋
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 4 }}>
-            Here's your financial overview for {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
-          </p>
+      <main className="page" style={{ flex: 1 }}>
+
+        {/* ── Greeting row ── */}
+        <div className="flex justify-between items-center mb-20">
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
+              {greeting}, {name} 👋
+            </h2>
+            <p className="text-muted mt-4" style={{ fontSize: 13 }}>
+              {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+          <span className="badge badge-blue">Free Plan</span>
         </div>
 
-        {/* Stat Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
+        {/* ── Stat cards ── */}
+        <div className="flex gap-16 mb-20" style={{ flexWrap: 'wrap' }}>
           <StatCard
-            label="Health Score"
+            icon="💼" label="Balance"
+            value={health ? `₹${Number(health.savings).toLocaleString('en-IN')}` : '—'}
+            sub={health?.savings >= 0 ? 'Positive this month' : 'Spending more than income'}
+            subColor={health?.savings >= 0 ? 'var(--green)' : 'var(--red)'}
+          />
+          <StatCard
+            icon="📥" label="Income"
+            value={health ? `₹${Number(health.total_income).toLocaleString('en-IN')}` : '—'}
+            sub="This month" subColor="var(--green)"
+          />
+          <StatCard
+            icon="📤" label="Expenses"
+            value={health ? `₹${Number(health.total_expenses).toLocaleString('en-IN')}` : '—'}
+            sub="This month" subColor="var(--red)"
+          />
+          <StatCard
+            icon="⭐" label="Health Score"
             value={health ? `${health.score}/100` : '—'}
-            color={scoreColor}
             sub={health?.label}
-          />
-          <StatCard
-            label="Income This Month"
-            value={health ? `₹${health.total_income.toFixed(0)}` : '—'}
-            color="var(--accent-green)"
-          />
-          <StatCard
-            label="Expenses This Month"
-            value={health ? `₹${health.total_expenses.toFixed(0)}` : '—'}
-            color="var(--accent-red)"
-          />
-          <StatCard
-            label="Savings"
-            value={health ? `₹${health.savings.toFixed(0)}` : '—'}
-            color={health?.savings >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}
-            sub={health?.savings >= 0 ? "You're saving! 🎉" : "Spending more than income"}
+            subColor={!health ? 'var(--text2)' : health.score >= 70 ? 'var(--green)' : health.score >= 40 ? 'var(--yellow)' : 'var(--red)'}
           />
         </div>
 
-        {/* Main Content */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 20, marginBottom: 20 }}>
+        {/* ── Main content grid ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 20, marginBottom: 20 }}>
 
-          {/* Pie Chart */}
-          <div className="card-modern">
-            <p className="section-title" style={{ fontSize: 16, marginBottom: 20 }}>Spending by Category</p>
+          {/* Doughnut chart */}
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="flex justify-between items-center">
+              <h3 style={{ fontSize: 15 }}>Spending by category</h3>
+              <span className="text-xs text-muted">This month</span>
+            </div>
+
             {summary.length > 0 ? (
-              <Pie
-                data={pieData}
-                options={{
-                  plugins: {
-                    legend: {
-                      position: 'bottom',
-                      labels: { color: 'var(--text-secondary)', font: { size: 11 }, padding: 12 },
-                    },
-                    tooltip: {
-                      callbacks: {
-                        label: ctx => ` ₹${ctx.raw.toFixed(0)}`
-                      }
-                    }
-                  },
-                }}
-              />
+              <>
+                <div style={{ width: 180, margin: '0 auto', position: 'relative' }}>
+                  <Doughnut data={chartData} options={chartOptions} />
+                  {/* Centre label inside doughnut hole */}
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center',
+                    pointerEvents: 'none',
+                  }}>
+                    <span className="text-xs text-muted">Total</span>
+                    <span className="num font-bold" style={{ fontSize: 15, color: 'var(--text)' }}>
+                      ₹{summary.reduce((s, i) => s + i.total, 0).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Legend */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {summary.map(s => (
+                    <div key={s.category} className="flex justify-between items-center">
+                      <div className="flex items-center gap-8">
+                        <span style={{
+                          width: 10, height: 10, borderRadius: '50%',
+                          background: CAT_COLOR[s.category] || '#6b7280',
+                          flexShrink: 0,
+                        }} />
+                        <span className="text-sm" style={{ color: 'var(--text2)' }}>{s.category}</span>
+                      </div>
+                      <span className="num text-sm font-medium">
+                        ₹{Number(s.total).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : (
-              <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No expenses yet</p>
-                <Link to="/expenses" style={{ color: 'var(--accent-light)', fontSize: 13, textDecoration: 'none' }}>
-                  Add your first expense →
-                </Link>
+              <div className="text-center" style={{ padding: '40px 0', color: 'var(--text2)' }}>
+                No expenses this month yet.{' '}
+                <Link to="/expenses" style={{ color: 'var(--blue)' }}>Add one →</Link>
               </div>
             )}
           </div>
 
-          {/* Recent Expenses */}
-          <div className="card-modern">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <p style={{ fontSize: 16, fontWeight: 700 }}>Recent Expenses</p>
-              <Link to="/expenses" style={{ color: 'var(--accent-light)', fontSize: 13, textDecoration: 'none' }}>
+          {/* Recent transactions */}
+          <div className="card">
+            <div className="flex justify-between items-center mb-16">
+              <h3 style={{ fontSize: 15 }}>Recent transactions</h3>
+              <Link to="/expenses" style={{ fontSize: 13, color: 'var(--blue)', textDecoration: 'none' }}>
                 View all →
               </Link>
             </div>
+
             {recent.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>💸</div>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No expenses logged yet</p>
+              <div className="text-center" style={{ padding: '40px 0', color: 'var(--text2)' }}>
+                No transactions yet.
               </div>
             ) : (
-              <div>
-                {recent.map((e, i) => (
-                  <div
-                    key={e.id}
-                    className="slide-in"
-                    style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '12px 0',
-                      borderBottom: i < recent.length - 1 ? '1px solid var(--border)' : 'none',
-                      animationDelay: `${i * 0.05}s`,
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{
-                        width: 36, height: 36, borderRadius: 10,
-                        background: `${categoryColors[e.category] || '#7c3aed'}22`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 16,
-                      }}>
-                        {e.category === 'Food' ? '🍔' : e.category === 'Travel' ? '✈️' : e.category === 'Rent' ? '🏠' : '💳'}
-                      </div>
-                      <div>
-                        <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 2 }}>
-                          {e.note || e.category}
-                        </p>
-                        <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{e.date}</p>
-                      </div>
-                    </div>
-                    <span style={{ fontWeight: 700, color: 'var(--accent-red)', fontSize: 15 }}>
-                      -₹{e.amount}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th className="text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recent.map(e => (
+                    <tr key={e.id}>
+                      <td style={{ fontWeight: 500 }}>{e.note || e.category}</td>
+                      <td>
+                        <span className="badge" style={{
+                          background: (CAT_COLOR[e.category] || '#6b7280') + '18',
+                          color: CAT_COLOR[e.category] || '#6b7280',
+                        }}>
+                          {e.category}
+                        </span>
+                      </td>
+                      <td className="text-muted text-sm">{e.date}</td>
+                      <td className="text-right num font-medium text-red">
+                        −₹{Number(e.amount).toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="card-modern">
-          <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Quick Actions</p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {[
-              { to: '/expenses', label: '+ Add Expense', color: '#7c3aed' },
-              { to: '/income', label: '+ Add Income', color: '#10b981' },
-              { to: '/groups', label: '+ New Group', color: '#3b82f6' },
-              { to: '/goals', label: '+ New Goal', color: '#f59e0b' },
-              { to: '/calculator', label: '🧮 Calculator', color: '#ec4899' },
-              { to: '/education', label: '📚 Learn', color: '#14b8a6' },
-            ].map(action => (
+        {/* ── Quick actions ── */}
+        <div className="card">
+          <h3 className="mb-16" style={{ fontSize: 15 }}>Quick actions</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+            {quickActions.map(a => (
               <Link
-                key={action.to}
-                to={action.to}
+                key={a.to}
+                to={a.to}
+                className="card card-hover"
                 style={{
-                  background: `${action.color}18`,
-                  border: `1px solid ${action.color}44`,
-                  borderRadius: 10,
-                  padding: '8px 16px',
-                  color: action.color,
                   textDecoration: 'none',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  transition: 'all 0.2s',
+                  padding: '16px 14px',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 8,
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = `${action.color}30`}
-                onMouseLeave={e => e.currentTarget.style.background = `${action.color}18`}
               >
-                {action.label}
+                <span style={{ fontSize: 22 }}>{a.icon}</span>
+                <span style={{ fontSize: 13, fontWeight: 500, color: a.color }}>
+                  {a.label}
+                </span>
               </Link>
             ))}
           </div>
         </div>
 
-      </div>
+      <GoalProgress />
+      <SmartInsights />
+      <FinancialSnapshot />
+      <AboutSpendly />
+      <AchievementCards />
+      <SpendingTrends />
+      <ActivityTimeline />
+      <WhySpendly />
+      <LessonCard/>
+      <FAQ/>
+      
+
+      </main>
+
+      <Footer />
     </div>
   );
 }
