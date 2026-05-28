@@ -11,7 +11,7 @@ function Footer() {
 
         background:'#09090f',
 
-        borderTop:'1px solid #1e1e2d',
+        borderTop:'1px solid #1a1a27',
 
         padding:'50px 32px 20px'
 
