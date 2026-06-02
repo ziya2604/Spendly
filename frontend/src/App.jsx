@@ -15,7 +15,8 @@ import Debts      from './pages/Debts';
 import Bills      from './pages/Bills';
 import Challenges from './pages/Challenges';
 import Education  from './pages/Education';
-import Calculator from './pages/Calculator';
+import Calculator  from './pages/Calculator';
+import About      from './pages/About';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
           <Route path="/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
           <Route path="/education"  element={<ProtectedRoute><Education /></ProtectedRoute>} />
           <Route path="/calculator" element={<ProtectedRoute><Calculator /></ProtectedRoute>} />
+          <Route path="/about" element={<About />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

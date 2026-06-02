@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../utils/ThemeContext';
 
 const LINKS = [
-  { to: '/dashboard', label: 'Dashboard' },
+  { to: "/dashboard", label: "Home" },
   { to: '/expenses', label: 'Expenses' },
   { to: '/income', label: 'Income' },
   { to: '/budgets', label: 'Budgets' },
@@ -13,6 +13,7 @@ const LINKS = [
   { to: '/challenges', label: 'Challenges' },
   { to: '/education', label: 'Learn' },
   { to: '/calculator', label: 'Calculator' },
+  { to: '/about', label: 'About' },
 ];
 
 function Navbar() {
