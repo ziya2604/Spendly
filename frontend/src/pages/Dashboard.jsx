@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Doughnut, Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS, ArcElement, Tooltip, Legend,
-  CategoryScale, LinearScale, PointElement, LineElement, Filler,
-} from 'chart.js';
+import {Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler,} from 'chart.js';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import GoalProgress from '../components/GoalProgress';
